@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TeXFlowy
 // @namespace    https://github.com/Zwierlein
-// @version      0.1.1
+// @version      0.1.2
 // @description  Supports formula rendering in WorkFlowy with KaTeX
 // @author       Martin
 // @match        https://workflowy.com/*
