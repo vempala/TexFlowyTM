@@ -36,6 +36,7 @@ global WF:false
     // Replace .katex elements with their TeX source (<annotation> element).
     // Modifies fragment in-place.
     function katexReplaceWithTex(fragment, copyDelimiters = defaultCopyDelimiters) {
+        var formulatext
         // Remove .katex-html blocks that are preceded by .katex-mathml blocks
         // (which will get replaced below).
         const katexHtml = fragment.querySelectorAll('.katex-mathml + .katex-html');
@@ -47,30 +48,36 @@ global WF:false
                 element.parentNode.removeChild(element);
             }
         }
-        // Replace .katex elements with their annotation (TeX source)
+        // Replace .katex-display elements with their annotation (TeX source)
+        // descendant, with display delimiters.
+        const katexdisplays = fragment.querySelectorAll('.katex-display');
+        for (let i = 0; i < katexdisplays.length; i++) {
+            console.log('DISPLAY MATH HANDLING');
+            const element = katexdisplays[i];
+            const texSource = element.querySelector('annotation');
+            console.log(texSource);
+            formulatext = texSource.innerHTML;
+            console.log(formulatext);
+            formulatext = copyDelimiters.display[0] + formulatext + copyDelimiters.display[1];
+            console.log(formulatext);
+            console.log(copyDelimiters.display[0]);
+            element.parentNode.outerHTML = formulatext;
+        }
+
+        // Replace remaining .katex elements with their annotation (TeX source)
         // descendant, with inline delimiters.
-        const katexclass = fragment.querySelectorAll('.katex');
-        for (let i = 0; i < katexclass.length; i++) {
-            const element = katexclass[i];
+        const katexblock = fragment.querySelectorAll('.katex');
+        for (let i = 0; i < katexblock.length; i++) {
+            console.log('INLINE MATH HANDLING');
+            const element = katexblock[i];
             const texSource = element.querySelector('annotation');
             if (texSource) {
-                if (element.replaceWith) {
-                    element.replaceWith(texSource);
-                } else {
-                    element.parentNode.replaceChild(texSource, element);
-                }
-                texSource.innerHTML = copyDelimiters.inline[0] + texSource.innerHTML + copyDelimiters.inline[1];
+                formulatext = texSource.innerHTML;
+                console.log(formulatext);
+                formulatext = copyDelimiters.inline[0] + formulatext + copyDelimiters.inline[1];
+                console.log(formulatext);
+                element.parentNode.outerHTML = formulatext;
             }
-        }
-        // Switch display math to display delimiters.
-        const displays = fragment.querySelectorAll('.katex-display annotation');
-        for (let i = 0; i < displays.length; i++) {
-            const element = displays[i];
-            element.innerHTML = copyDelimiters.display[0] +
-                element.innerHTML.substr(copyDelimiters.inline[0].length,
-                                         element.innerHTML.length - copyDelimiters.inline[0].length
-                                         - copyDelimiters.inline[1].length)
-                + copyDelimiters.display[1];
         }
 
         return fragment;
@@ -102,7 +109,7 @@ global WF:false
                     return;
                 }
                 const texelement = katexReplaceWithTex(focusedelement);
-                // console.log(texelement);
+                console.log(texelement);
             }
         },0);
     }
