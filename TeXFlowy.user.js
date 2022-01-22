@@ -52,15 +52,10 @@ global WF:false
         // descendant, with display delimiters.
         const katexdisplays = fragment.querySelectorAll('.katex-display');
         for (let i = 0; i < katexdisplays.length; i++) {
-            console.log('DISPLAY MATH HANDLING');
             const element = katexdisplays[i];
             const texSource = element.querySelector('annotation');
-            console.log(texSource);
             formulatext = texSource.innerHTML;
-            console.log(formulatext);
             formulatext = copyDelimiters.display[0] + formulatext + copyDelimiters.display[1];
-            console.log(formulatext);
-            console.log(copyDelimiters.display[0]);
             element.parentNode.outerHTML = formulatext;
         }
 
@@ -68,14 +63,11 @@ global WF:false
         // descendant, with inline delimiters.
         const katexblock = fragment.querySelectorAll('.katex');
         for (let i = 0; i < katexblock.length; i++) {
-            console.log('INLINE MATH HANDLING');
             const element = katexblock[i];
             const texSource = element.querySelector('annotation');
             if (texSource) {
                 formulatext = texSource.innerHTML;
-                console.log(formulatext);
                 formulatext = copyDelimiters.inline[0] + formulatext + copyDelimiters.inline[1];
-                console.log(formulatext);
                 element.parentNode.outerHTML = formulatext;
             }
         }
@@ -103,13 +95,11 @@ global WF:false
                 renderMathViaKatex(oldfocuselement);
                 const focusedelement = focusedItem.getElement();
                 oldfocusedItemID = currentID;
-                console.log(focusedelement.getElementsByClassName('katex').length);
                 if (!focusedelement.querySelector('.katex-mathml')) {
                     // default action OK if no .katex-mathml elements
                     return;
                 }
                 const texelement = katexReplaceWithTex(focusedelement);
-                console.log(texelement);
             }
         },0);
     }
@@ -141,10 +131,7 @@ global WF:false
             ],
             throwOnError: false,
             strict: false
-//            output: 'html'
         });
-
-        console.log("math rendered");
     }
 
  /**
