@@ -23,7 +23,30 @@ global WF:false
 	'use strict';
 
     const katex_css = GM_getResourceText("KATEX_CSS");
-    GM_addStyle(katex_css);
+
+ /**
+ * Transforms the katex required CSS for use from within Tampermonkey
+ *
+ * @param {string} css the katex CSS
+ */
+    function transformCss(css) {
+        if (typeof css !== "string") {
+            throw new TypeError("Argument css must be of type string");
+        }
+
+        return css
+            .toString()
+            .replace(/\.woff2\)/g, '.woff2")')
+            .replace(/\.woff\)/g, '.woff")')
+            .replace(/\.ttf\)/g, '.ttf")')
+            .replace(
+            /fonts\//g,
+            '"https://cdn.jsdelivr.net/npm/katex@0.15.2/dist/fonts/'
+        );
+    }
+
+    const katex_css_trafo = transformCss(katex_css);
+    GM_addStyle(katex_css_trafo);
 
     // Set these to how you want inline and display math to be delimited.
     const defaultCopyDelimiters = {
@@ -83,38 +106,64 @@ global WF:false
    * @returns {void}
    */
     function wfEventListener(eventObject) {
+        if (eventObject.keyCode == 13 && eventObject.altKey) {
+            setTimeout(() => {renderMath();},0);
+            return;
+        } else if (eventObject.keyCode == 8) {
+            if (document.getSelection().anchorOffset == 0) {
+                const previouselement = WF.focusedItem().getPreviousVisibleSibling().getElement();
+                if (!previouselement.querySelector('.katex-mathml')) {
+                // default action OK if no .katex-mathml elements
+                    return;
+                }
+                const previouselementclean = katexReplaceWithTex(previouselement);
+            };
+        };
         setTimeout(() => {
             const focusedItem = WF.focusedItem();
             if (focusedItem === null) {
                 return;
-            }
+            };
+            if (eventObject.keyCode == 13) {
+                oldfocusedItemID = WF.focusedItem().getPreviousVisibleSibling().getId();
+            };
             currentID = focusedItem.getId();
+            const focusedelement = focusedItem.getElement();
             if (currentID != oldfocusedItemID)
             {
-                const oldfocuselement = WF.getItemById(oldfocusedItemID).getElement();
-                renderMathViaKatex(oldfocuselement);
-                const focusedelement = focusedItem.getElement();
-                oldfocusedItemID = currentID;
-                if (!focusedelement.querySelector('.katex-mathml')) {
-                    // default action OK if no .katex-mathml elements
-                    return;
-                }
-                const texelement = katexReplaceWithTex(focusedelement);
+                const oldfocusItem = WF.getItemById(oldfocusedItemID);
+                if (oldfocusItem !== null) {
+                    const oldfocuselement = oldfocusItem.getElement();
+                    renderMathViaKatex(oldfocuselement);
+                };
+            };
+            oldfocusedItemID = currentID;
+            if (!focusedelement.querySelector('.katex-mathml')) {
+                // default action OK if no .katex-mathml elements
+                return;
             }
+            const texelement = katexReplaceWithTex(focusedelement);
         },0);
     }
 
-    document.addEventListener("keydown",wfEventListener);
-    document.addEventListener("click",wfEventListener);
+   document.addEventListener("keydown",wfEventListener);
+   document.addEventListener("click",wfEventListener);
 
-    function renderfocuseditem() {
-        const focusedItem = WF.focusedItem();
-        if (focusedItem === null) {
-            return;
+    // watch the page, so that the rendering is updated when new contents come in as the user edits or navigates. Make sure that the currently focusedItem is in plain tex, not rendered.
+	const observer = new MutationObserver(function (mutationlist) {
+        if (typeof WF !== "undefined" && WF !== null) {
+            if (WF.rootItem !== undefined && WF.rootItem !== null) {
+                    if (WF.focusedItem()) {
+                        currentID = WF.focusedItem().getId();
+                        if (currentID != oldfocusedItemID) {
+                            const changeevent = new Event('change');
+                            wfEventListener(changeevent);
+                        };
+                    };
+            }
         }
-        renderMath();
-
-   }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
 
 /**
  * Renders all math blocks by calling Katex's {@function renderMathInElement}.
@@ -183,15 +232,6 @@ global WF:false
             setTimeout(repeat, timeoutMs);
         }
     }
-
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') {
-            setTimeout(() => {renderfocuseditem();},0);
-        };
-        if (e.keyCode == 13 && e.altKey) {
-            setTimeout(() => {renderfocuseditem();},0);
-        };
-    });
 
     callAfterDocumentLoaded(renderMath);
     callAfterDocumentLoaded(() => {
